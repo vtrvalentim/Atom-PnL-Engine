@@ -1,33 +1,11 @@
-import os
-import numpy as np
-import scipy
 import pandas as pd
-import seaborn as sns
 import matplotlib.pyplot as plt
-import translate_string_file as trslt_str
 import import_export_file as file
-from xlsxwriter.utility import xl_rowcol_to_cell
 import tkinter as tki
-import subprocess as sub
 import data_visualization as dvis
 
-# ______________________________________________________________________________________________________________________
+#_______________________________________________________________________________________________________________________
 # SUPPORT FUNCTIONS
-
-# TODO DELETE THESE FUNCTIONS
-#XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-# TEMP IMPORT FUNCTIONS
-def click_import_sales_hist_temp():
-    global in_sales_hist
-    in_sales_hist = file.import_data('Hyperbulk_input_v3.xlsx')
-    return
-
-def click_import_sku_dict_temp():
-    global in_sku_dict
-    in_sku_dict = file.import_data('SKU_dictionary.xlsx')
-    return
-#XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-
 
 def click_import_sales_hist():
     # __________________________________________________________________________________________________________________
@@ -60,12 +38,12 @@ def click_import_sales_hist():
     return
 
 def click_import_sku_dict():
-    # ______________________________________________________________________________________________
+    # __________________________________________________________________________________________________________________
     # DESCRIPTION
 
     # This function handles the button to import the sku dictionary file
     # It will print a success message if the import works
-    # ______________________________________________________________________________________________
+    # __________________________________________________________________________________________________________________
 
     # Import file
     global in_sku_dict
@@ -154,7 +132,6 @@ def batch_number_finder(input_string):
 
 
     return batch_number
-    # ______________________________________________________________________________________________
 
 def handle_input_error():
     # __________________________________________________________________________________________________________________
@@ -196,6 +173,7 @@ def handle_input_error():
     return 0
 
 # ______________________________________________________________________________________________________________________
+# MAIN FUNCTION
 
 def run_algorithm(gbp_to_rmb,eur_to_rmb,tmall_margin ,jd_margin,wechat_margin,proof_margin,op_fees,freight,if_rate,consumption_tax,c_tax,duty,vat_rate):
     # __________________________________________________________________________________________________________________
@@ -222,19 +200,15 @@ def run_algorithm(gbp_to_rmb,eur_to_rmb,tmall_margin ,jd_margin,wechat_margin,pr
     # __________________________________________________________________________________________________________________
     # READING THE DATA
 
-    #TODO REMOVE COMMMENTS AFTER TESTING
-
     # Handling input error
-    #if handle_input_error() == 1:
-    #    return
+    if handle_input_error() == 1:
+        return
 
     # Read sales history
-    #hyperbulk_data = pd.read_excel(in_sales_hist)
-    hyperbulk_data = in_sales_hist
+    hyperbulk_data = pd.read_excel(in_sales_hist)
 
     # Read sku dictionary
-    #sku_dictionary = pd.read_excel(in_sku_dict)
-    sku_dictionary = in_sku_dict
+    sku_dictionary = pd.read_excel(in_sku_dict)
     # __________________________________________________________________________________________________________________
     # JOINING & FORMATTING TABLES
 
@@ -267,7 +241,6 @@ def run_algorithm(gbp_to_rmb,eur_to_rmb,tmall_margin ,jd_margin,wechat_margin,pr
     reordered_clean_table.columns = ['Atom SKU Code','Proof SKU Code','Hyperbulk SKU Code','Alcohol Category',
                                      'SKU Name','SKU Description','Age','EXW (GBP)','VILC (GBP)','MACO (GBP)',
                                      'RRP (RMB)','Margin %','Date','Month','Channel']
-
     # __________________________________________________________________________________________________________________
     # INSERTING BATCH COLUMN
 
@@ -302,7 +275,7 @@ def run_algorithm(gbp_to_rmb,eur_to_rmb,tmall_margin ,jd_margin,wechat_margin,pr
     # Replace alcohol category column with the new values
     reordered_clean_table = reordered_clean_table.drop(columns = ['Alcohol Category'])
     reordered_clean_table.insert(3,'Alcohol Category',alc_cat)
-    # ______________________________________________________________________________________________
+    # __________________________________________________________________________________________________________________
     # CHANGE 5X5 CL SKU NAME
 
     # Create empty column
@@ -318,7 +291,7 @@ def run_algorithm(gbp_to_rmb,eur_to_rmb,tmall_margin ,jd_margin,wechat_margin,pr
     # Replace alcohol category column with the new values
     reordered_clean_table = reordered_clean_table.drop(columns=['SKU Name'])
     reordered_clean_table.insert(4,'SKU Name',new_sku_name)
-    # ______________________________________________________________________________________________
+    # __________________________________________________________________________________________________________________
     # HANDLING DATE COLUMNS
 
     reordered_clean_table = reordered_clean_table.sort_values(by=['Date'], ascending=True)
@@ -338,7 +311,7 @@ def run_algorithm(gbp_to_rmb,eur_to_rmb,tmall_margin ,jd_margin,wechat_margin,pr
 
     # Insert month+year column
     reordered_clean_table['Month Year'] = reordered_clean_table['Month'] + reordered_clean_table['Year'].map(str)
-    # ______________________________________________________________________________________________
+    # __________________________________________________________________________________________________________________
     # REMOVING ROWS WITH INSUFFICIENT DATA
 
     # Select rows with no reference on sku_dictionary
@@ -353,7 +326,7 @@ def run_algorithm(gbp_to_rmb,eur_to_rmb,tmall_margin ,jd_margin,wechat_margin,pr
 
     # Save filtered joint sales history as variable
     complete_sales_history = reordered_clean_table
-    # ______________________________________________________________________________________________
+    # __________________________________________________________________________________________________________________
 
     # ADD VOLUME PER CHANNEL COLUMNS
 
@@ -392,7 +365,7 @@ def run_algorithm(gbp_to_rmb,eur_to_rmb,tmall_margin ,jd_margin,wechat_margin,pr
     full_vol_map = total_vol.to_frame().join(tmall_vol.to_frame()).join(jdfs_vol.to_frame()).join(wechat_vol.to_frame())\
         .join(hyperbulk_vol.to_frame())
 
-    # ______________________________________________________________________________________________
+    # __________________________________________________________________________________________________________________
 
     # ADD VOLUME PER MONTH COLUMNS
 
@@ -421,8 +394,7 @@ def run_algorithm(gbp_to_rmb,eur_to_rmb,tmall_margin ,jd_margin,wechat_margin,pr
                                                                         &(reordered_clean_table['Month Year']==month_string)])
         # Join column
         full_vol_map = full_vol_map.join(unique_month_vol.to_frame())
-
-    # ______________________________________________________________________________________________
+    # __________________________________________________________________________________________________________________
 
     # FURTHER CLEANING AND REORGANIZING COLUMNS
 
@@ -438,8 +410,7 @@ def run_algorithm(gbp_to_rmb,eur_to_rmb,tmall_margin ,jd_margin,wechat_margin,pr
 
     # Drop rows with repeated SKUs
     reordered_clean_table = reordered_clean_table.drop_duplicates(subset = ['Atom SKU Code'], keep = 'first')
-
-    # ______________________________________________________________________________________________
+    # __________________________________________________________________________________________________________________
 
     # SET P&L VARIABLES
 
@@ -448,8 +419,7 @@ def run_algorithm(gbp_to_rmb,eur_to_rmb,tmall_margin ,jd_margin,wechat_margin,pr
     rmb_to_eur = 1/eur_to_rmb #multiplier
     gmb_to_eur = gbp_to_rmb/eur_to_rmb #multiplier
     eur_to_gmb = 1/gmb_to_eur #multiplier
-
-    # ______________________________________________________________________________________________
+    # __________________________________________________________________________________________________________________
 
     # CALCULATING P&L NUMBERS PER SKU
 
@@ -560,10 +530,7 @@ def run_algorithm(gbp_to_rmb,eur_to_rmb,tmall_margin ,jd_margin,wechat_margin,pr
 
     # HYPERBULK MACO (RMB)
     reordered_clean_table['HYPERBULK MACO (RMB)'] = reordered_clean_table['EXW MACO (RMB)']
-
-    # ______________________________________________________________________________________________
-
-
+    # __________________________________________________________________________________________________________________
     # FIXING TABLE FORMAT AND CREATE SHEETS FOR OUTPUT
 
     # Reorder columns and create finance sheet
@@ -585,9 +552,7 @@ def run_algorithm(gbp_to_rmb,eur_to_rmb,tmall_margin ,jd_margin,wechat_margin,pr
                                               'EXW MACO (GBP)','EXW MACO (RMB)','Margin %',#'RRP (GBP)','RRP (RMB)',
                                               'OP FEES (RMB)','CIF (RMB)','CONSUMPTION TAX (RMB)','DUTY (RMB)',
                                               'VAT (RMB)','COGS (RMB)','IMPORTER MARGIN (RMB)','TOTAL COST (GBP)','TOTAL COST (RMB)'])
-
-    # ______________________________________________________________________________________________
-
+    # __________________________________________________________________________________________________________________
     # ADD REVENUE & PROFIT COLUMNS TO VOLUME SHEET
 
     # Revenue
@@ -687,7 +652,6 @@ def run_algorithm(gbp_to_rmb,eur_to_rmb,tmall_margin ,jd_margin,wechat_margin,pr
 
     dvis.generate_channel_kip_charts(volume_sheet)
 
-    dvis.generate_hexbin_age_rrp_TEMP(volume_sheet)
     plt.show()
     # __________________________________________________________________________________________________________________
     # GENERATE PPT
@@ -695,13 +659,12 @@ def run_algorithm(gbp_to_rmb,eur_to_rmb,tmall_margin ,jd_margin,wechat_margin,pr
     file.export_ppt()
     return
 
-# ______________________________________________________________________________________________
-
-
-# ______________________________________________________________________________________________
+# ______________________________________________________________________________________________________________________
 # USER INTERFACE
 
 if __name__ == "__main__":
+    
+    # Set global variables
     global in_sales_hist
     global in_sku_dict
 
@@ -712,8 +675,6 @@ if __name__ == "__main__":
     top = tki.Tk()
     # Window title
     top.title("P&L Generator")
-    # Window icon
-    #top.wm_iconbitmap('icon.ico')
     # Window background
     top.configure(background='white')
 
@@ -736,95 +697,80 @@ if __name__ == "__main__":
     gbp_to_rmb_label = tki.Label(variables_frame, text='Pound to Yuan ratio',background='white', anchor = 's', height = 2,width = 20)
     gbp_to_rmb_entry = tki.Entry(variables_frame, foreground='#008484', justify='center')
     gbp_to_rmb_entry.insert(0,string='8.97')
-    #igbp_to_rmb = float(gbp_to_rmb_entry.get())
     gbp_to_rmb_label.grid(row = 0, column = 0)
     gbp_to_rmb_entry.grid(row = 1, column = 0)
 
     eur_to_rmb_label = tki.Label(variables_frame, text='Euro to Yuan ratio',background='white', anchor = 's', height = 2)
     eur_to_rmb_entry = tki.Entry(variables_frame, foreground='#008484', justify='center')
     eur_to_rmb_entry.insert(0,string='7.73')
-    #ieur_to_rmb = float(eur_to_rmb_entry.get())
     eur_to_rmb_label.grid(row = 2, column = 0)
     eur_to_rmb_entry.grid(row = 3, column = 0)
 
     # Margins
     tmall_margin_label = tki.Label(variables_frame,text='Tmall margin (%)',background='white',anchor='s',height=2,width=20)
-    tmall_margin_entry = tki.Entry(variables_frame, foreground='#008484', justify='center') #0.21
+    tmall_margin_entry = tki.Entry(variables_frame, foreground='#008484', justify='center') 
     tmall_margin_entry.insert(0,string='0.21')
-    #itmall_margin = float(tmall_margin_entry.get())
     tmall_margin_label.grid(row = 0, column = 1)
     tmall_margin_entry.grid(row = 1, column = 1)
 
     jd_margin_label = tki.Label(variables_frame, text='JD FS margin (%)',background='white', anchor = 's', height = 2)
-    jd_margin_entry = tki.Entry(variables_frame, foreground='#008484', justify='center') #0.22
+    jd_margin_entry = tki.Entry(variables_frame, foreground='#008484', justify='center') 
     jd_margin_entry.insert(0,string='0.22')
-    #ijd_margin = float(jd_margin_entry.get())
     jd_margin_label.grid(row = 2, column = 1)
     jd_margin_entry.grid(row = 3, column = 1)
 
     wechat_margin_label = tki.Label(variables_frame, text='WeChat margin (%)',background='white',anchor='s',height = 2)
-    wechat_margin_entry = tki.Entry(variables_frame, foreground='#008484', justify='center')  # 0.33
+    wechat_margin_entry = tki.Entry(variables_frame, foreground='#008484', justify='center')  
     wechat_margin_entry.insert(0,string='0.33')
-    #iwechat_margin = float(wechat_margin_entry.get())
     wechat_margin_label.grid(row = 4, column = 1)
     wechat_margin_entry.grid(row = 5, column = 1)
 
     proof_margin_label = tki.Label(variables_frame,text='Importer margin (%)',background='white',anchor='s',height = 2)
-    proof_margin_entry = tki.Entry(variables_frame, foreground='#008484', justify='center')  # 0.18
+    proof_margin_entry = tki.Entry(variables_frame, foreground='#008484', justify='center') 
     proof_margin_entry.insert(0,string='0.18')
-    #iproof_margin = float(proof_margin_entry.get())
     proof_margin_label.grid(row = 6, column = 1)
     proof_margin_entry.grid(row = 7, column = 1)
 #
     # Costs
-    op_fees_label = tki.Label(variables_frame, text='Operating fees (RMB)',background='white', anchor = 's', height = 2
-                              ,width = 20)
+    op_fees_label = tki.Label(variables_frame, text='Operating fees (RMB)',background='white', anchor = 's', height = 2,width = 20)
     op_fees_entry = tki.Entry(variables_frame, foreground='#008484', justify='center')  # 18.5
     op_fees_entry.insert(0,string='18.5')
-    #iop_fees = float(op_fees_entry.get())
     op_fees_label.grid(row = 0, column = 2)
     op_fees_entry.grid(row = 1, column = 2)
 
     freight_label = tki.Label(variables_frame, text='Freight (EUR)',background='white', anchor = 's', height = 2)
     freight_entry = tki.Entry(variables_frame, foreground='#008484', justify='center')  # 0.5
     freight_entry.insert(0,string='0.5')
-    #ifreight = float(freight_entry.get())
     freight_label.grid(row = 2, column = 2)
     freight_entry.grid(row = 3, column = 2)
 
     c_tax_label = tki.Label(variables_frame, text='C tax (RMB)', background='white', anchor='s', height=2)
     c_tax_entry = tki.Entry(variables_frame, foreground='#008484', justify='center')  # 0.7104
     c_tax_entry.insert(0, string='0.7104')
-    # ic_tax = float(c_tax_entry.get())
     c_tax_label.grid(row=4, column=2)
     c_tax_entry.grid(row=5, column=2)
 
     if_rate_label = tki.Label(variables_frame, text='IF rate (%)',background='white', anchor = 's', height = 2,width = 20)
     if_rate_entry = tki.Entry(variables_frame, foreground='#008484', justify='center')  #0.003
     if_rate_entry.insert(0,string='0.003')
-    #iif_rate = float(if_rate_entry.get())
     if_rate_label.grid(row = 0, column = 3)
     if_rate_entry.grid(row = 1, column = 3)
 
-    consumption_tax_label = tki.Label(variables_frame, text='Consumption tax rate (%)',background='white', anchor = 's'
-                                      , height = 2)
+    consumption_tax_label = tki.Label(variables_frame, text='Consumption tax rate (%)',background='white', anchor = 's', height = 2)
     consumption_tax_entry = tki.Entry(variables_frame, foreground='#008484', justify='center')  # 0.2625
     consumption_tax_entry.insert(0,string='0.2625')
-    #iconsumption_tax = float(consumption_tax_entry.get())
     consumption_tax_label.grid(row = 2, column = 3)
     consumption_tax_entry.grid(row = 3, column = 3)
 
     duty_label = tki.Label(variables_frame, text='Duty rate (%)',background='white', anchor = 's', height = 2)
     duty_entry = tki.Entry(variables_frame, foreground='#008484', justify='center')  # 0.05
     duty_entry.insert(0,string='0.05')
-    #iduty = float(duty_entry.get())
     duty_label.grid(row = 4, column = 3)
     duty_entry.grid(row = 5, column = 3)
 
     vat_rate_label = tki.Label(variables_frame, text='VAT rate (%)',background='white', anchor = 's', height = 2)
     vat_rate_entry = tki.Entry(variables_frame, foreground='#008484', justify='center')  # 0.1706
     vat_rate_entry.insert(0,string='0.1706')
-    #ivat_rate = float(vat_rate_entry.get())
     vat_rate_label.grid(row = 6, column = 3)
     vat_rate_entry.grid(row = 7, column = 3)
 
@@ -833,13 +779,13 @@ if __name__ == "__main__":
     # Upload sku dictionary
     upload_sku_dict = tki.Button(buttons_frame, text='UPLOAD SKU DICTIONARY', bg='#008484', fg='#ffffff',
                                  activebackground='#ffffff',activeforeground='#008484', padx=10,relief = 'solid'
-                                 ,command=click_import_sku_dict_temp)
+                                 ,command=click_import_sku_dict)
     upload_sku_dict.grid(row = 0, column = 0,padx=10)
 
     # Upload Hyperbulk sales history
     upload_sales_hist = tki.Button(buttons_frame, text='UPLOAD SALES HISTORY', bg='#008484', fg='#ffffff',
                                  activebackground='#ffffff',activeforeground='#008484',padx=10,relief = 'solid'
-                                   ,command = click_import_sales_hist_temp)
+                                   ,command = click_import_sales_hist)
     upload_sales_hist.grid(row = 0, column = 1,padx=10)
 
     # Generate Sheets Button
@@ -850,5 +796,4 @@ if __name__ == "__main__":
 
 
     top.mainloop()
-
-    #flat, groove, raised, ridge, solid, or sunken
+# ______________________________________________________________________________________________________________________
